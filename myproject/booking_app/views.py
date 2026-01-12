@@ -11,22 +11,20 @@ from .serializers import (
     ReviewCreateSerializer, BookingSerializer,
     HotelCreateSerializer, UserLoginSerializer, UserRegisterSerializer
 )
-from .pagination import HotelPagination, RoomPagination
-from .filters import RoomFilter
-from .permissions import CheckRolePermission, CreateHotelPermission
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
-
+from django.contrib.auth.decorators import login_not_required
+from django.utils.decorators import method_decorator
 
 
 class RegisterView(generics.CreateAPIView):
     serializer_class = UserRegisterSerializer
     permission_classes = [permissions.AllowAny]
 
-
 class LoginView(TokenObtainPairView):
     serializer_class = UserLoginSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 class LogoutView(generics.GenericAPIView):
@@ -40,38 +38,25 @@ class LogoutView(generics.GenericAPIView):
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 
-
-class UserProfileListAPIView(generics.ListAPIView):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileListSerializer
-
-    def get_queryset(self):
-        return UserProfile.objects.filter(id=self.request.user.id)
-
-
-class UserProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = UserProfile.objects.all()
-    serializer_class = UserProfileDetailSerializer
-
-    def get_queryset(self):
-        return UserProfile.objects.filter(id=self.request.user.id)
-
-
-class CityListAPIView(generics.ListAPIView):
-    queryset = City.objects.all()
-    serializer_class = CityListSerializer
-
-
-class CityDetailAPIView(generics.RetrieveAPIView):
-    queryset = City.objects.all()
-    serializer_class = CityDetailSerializer
-
-
+@method_decorator(login_not_required, name='dispatch')
 class HotelListAPIView(generics.ListAPIView):
     queryset = Hotel.objects.all()
     serializer_class = HotelListSerializer
-    pagination_class = HotelPagination
+    pagination_class = None
+    permission_classes = [permissions.AllowAny]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update({"request": self.request})
+        return context
+
+
+class HotelCreateAPIView(generics.CreateAPIView):
+    queryset = Hotel.objects.all()
+    serializer_class = HotelCreateSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
 
 class HotelDetailAPIView(generics.RetrieveAPIView):
     queryset = Hotel.objects.all()
@@ -80,21 +65,32 @@ class HotelDetailAPIView(generics.RetrieveAPIView):
 class HotelViewSet(viewsets.ModelViewSet):
     queryset = Hotel.objects.all()
     serializer_class = HotelCreateSerializer
-    permission_classes = [CreateHotelPermission]
-
     def get_queryset(self):
         return Hotel.objects.filter(owner=self.request.user)
 
-class HotelCreateAPIView(generics.CreateAPIView):
-    queryset = Hotel.objects.all()
-    serializer_class = HotelCreateSerializer
 
+class UserProfileListAPIView(generics.ListAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileListSerializer
+    def get_queryset(self):
+        return UserProfile.objects.filter(id=self.request.user.id)
+
+class UserProfileDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileDetailSerializer
+
+
+class CityListAPIView(generics.ListAPIView):
+    queryset = City.objects.all()
+    serializer_class = CityListSerializer
+
+class CityDetailAPIView(generics.RetrieveAPIView):
+    queryset = City.objects.all()
+    serializer_class = CityDetailSerializer
 
 class RoomListAPIView(generics.ListAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomListSerializer
-    pagination_class = RoomPagination
-
 
 class RoomDetailAPIView(generics.RetrieveAPIView):
     queryset = Room.objects.all()
@@ -104,15 +100,12 @@ class RoomDetailAPIView(generics.RetrieveAPIView):
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = Booking.objects.all()
     serializer_class = BookingSerializer
-
     def get_queryset(self):
         return Booking.objects.filter(user=self.request.user)
-
 
 class ReviewCreateAPIView(generics.CreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewCreateSerializer
-
 
 class ReviewEditAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()

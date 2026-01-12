@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import SimpleRouter
 from .views import (
     UserProfileDetailAPIView, UserProfileListAPIView,
+    CityListSerializer, CityDetailSerializer,
     CityListAPIView, CityDetailAPIView,
     HotelListAPIView, HotelDetailAPIView,
     RoomDetailAPIView, RoomListAPIView,
@@ -16,10 +17,10 @@ router.register(r'bookings', BookingViewSet, basename='bookings')
 router.register(r'hotel_methods', HotelViewSet, basename='hotel-methods')
 
 urlpatterns = [
+    path('', HotelListAPIView.as_view(), name='hotel_list'),
     path('', include(router.urls)),
-    path('hotel/', HotelListAPIView.as_view(), name='hotel_list'),
     path('hotel/<int:pk>/', HotelDetailAPIView.as_view(), name='hotel_detail'),
-    path('hotel_create/<int:pk>/', HotelCreateAPIView.as_view(), name='hotel_manage'),
+    path('hotel_create/', HotelCreateAPIView.as_view(), name='hotel_create'),
     path('cities/', CityListAPIView.as_view(), name='city_list'),
     path('cities/<int:pk>/', CityDetailAPIView.as_view(), name='city_detail'),
     path('room/', RoomListAPIView.as_view(), name='room_list'),

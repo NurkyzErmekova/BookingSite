@@ -76,7 +76,7 @@ class HotelImage(models.Model):
     hotel_image = models.ImageField(upload_to='hotel_photo')
 
     def __str__(self):
-        return f'{self.hotel}, {self.hotel_img}'
+        return f'Image for {self.hotel.hotel_name}'
 
 
 class Room(models.Model):
